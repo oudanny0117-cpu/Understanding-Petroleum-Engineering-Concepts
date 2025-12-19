@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 # ===================================================================
-# USER SETTINGS (you can make these adjustable later if you want)
+# USER SETTINGS
 # ===================================================================
 fracture_positions = np.array([0, 300, 350, 500, 800, 950, 1010, 1050, 1400, 1675, 1950])
 half_length = 250.0
@@ -71,20 +71,30 @@ def generate_plot(t_D_global):
 
     ax.axhline(0, color='whitesmoke', linewidth=6, label='Horizontal Wellbore')
 
-    interference_count = 10
-    for mid_pos, p_mid in zip(midpoint_positions, midpoint_pressures):
+    # Count how many intervals have significant pressure drop (interference)
+    interference_count = 0  # reset counter properly
+    for p_mid in midpoint_pressures:
         if p_mid < 0.1:
-            ax.axvline(mid_pos, color='cyan', linestyle='--', linewidth=3, alpha=0.9)
-            interference_count -= 1
-        else:
-            ax.axvline(mid_pos, color='k', linestyle=':', linewidth=1.5, alpha=0.75)
+            interference_count += 1
 
+    # Flow regime logic
+    if interference_count == num_intervals:
+        flow_regime = "Boundary Dominated Flow"
+    elif interference_count == 0:
+        flow_regime = "Infinite Acting"
+    else:
+        flow_regime = "Transitional Flow"
+
+    # Plot styling with updated title
     ax.set_ylabel('Fracture Half Length, xf (arbitrary units)', fontsize=14)
     ax.set_xlabel('Lateral Length, Lw (arbitrary units)', fontsize=14)
-    ax.set_title('Multi-Stage Fractured Horizontal Well — Top View\n'
-                 f'Time Producing = {t_D_global:.5f} (arbitrary units)  │  '
-                 f'Reservoir Boundaries Reached = {interference_count}/{num_intervals}',
-                 fontsize=16, pad=20)
+    ax.set_title(
+        'Multi-Stage Fractured Horizontal Well — Top View\n'
+        f'Time Producing = {t_D_global:.5f} (arbitrary units)  │  '
+        f'Reservoir Boundaries Reached = {interference_count}/{num_intervals}  │  '
+        f'Flow Regime = {flow_regime}',
+        fontsize=16, pad=20
+    )
     
     ax.tick_params(axis='both', which='major', labelsize=12)
     ax.set_yticks([-250, -125, 0, 125, 250])
