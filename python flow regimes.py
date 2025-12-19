@@ -125,10 +125,10 @@ def generate_plot(t_D_global):
     legend_elements = [
         Line2D([0], [0], color='red', lw=4, label='Hydraulic Fracture'),
         Line2D([0], [0], color='whitesmoke', lw=6, label='Horizontal Wellbore'),
-        Line2D([0], [0], color='cyan', linestyle='--', lw=3, label='Significant Interference (P << Pi)'),
-        Line2D([0], [0], color='k', linestyle=':', lw=1.5, alpha=0.75, label='No Significant Interference'),
+        Line2D([0], [0], color='cyan', linestyle='--', lw=3, label='P = P_i'),
+        Line2D([0], [0], color='k', linestyle=':', lw=1.5, alpha=0.85, label='P < P_i'),
     ]
-    ax.legend(handles=legend_elements, loc='upper right', fontsize=11, framealpha=0.75)
+    ax.legend(handles=legend_elements, loc='upper right', fontsize=11, framealpha=0.95)
 
     plt.tight_layout()
     return fig
@@ -137,7 +137,7 @@ def generate_plot(t_D_global):
 st.header("Multi-Stage Fractured Horizontal Well — Pressure Propagation Visualization")
 
 t_D_global = st.slider(
-    "Time Producing (dimensionless)",
+    "Time Producing (arbitrary units)",
     min_value=0.0001,
     max_value=0.25,
     value=0.001,
