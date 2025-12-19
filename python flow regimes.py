@@ -134,7 +134,7 @@ def generate_plot(t_D_global):
     return fig
 
 # Streamlit interface
-st.title("Multi-Stage Fractured Horizontal Well — Pressure Depletion Visualization")
+st.header("Multi-Stage Fractured Horizontal Well — Pressure Propagation Visualization")
 
 t_D_global = st.slider(
     "Time Producing (dimensionless)",
