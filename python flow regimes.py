@@ -26,7 +26,7 @@ def pressure_in_interval(x_D_local, t_D_local):
     return 1 - sum_term
 
 def generate_plot(t_D_global):
-    fig, ax = plt.subplots(figsize=(20, 10))  # Bigger plot
+    fig, ax = plt.subplots(figsize=(15, 7.5))  # Bigger plot
 
     x_global = np.linspace(0, total_length, num_intervals * num_points_per_interval)
     p_D_global = np.zeros_like(x_global)
