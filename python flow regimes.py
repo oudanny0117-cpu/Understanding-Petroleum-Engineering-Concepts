@@ -15,7 +15,7 @@ num_terms = 120
 # Derived
 intervals = np.diff(fracture_positions)
 total_length = fracture_positions[-1]
-num_intervals = len(intervals)
+num_intervals = len(intervals)  # 10
 n_vals = np.arange(1, 2 * num_terms + 1, 2)
 L_avg = np.mean(intervals)
 
@@ -66,37 +66,53 @@ def generate_plot(t_D_global):
     cbar.ax.tick_params(labelsize=12)
     cbar.ax.invert_yaxis()
 
+    # Fractures
     for pos in fracture_positions:
         ax.axvline(pos, ymin=0, ymax=1, color='red', linewidth=3.5)
 
-    ax.axhline(0, color='whitesmoke', linewidth=6, label='Horizontal Wellbore')
+    # Horizontal wellbore
+    ax.axhline(0, color='whitesmoke', linewidth=6)
 
-    # Count how many intervals have significant pressure drop (interference)
-    interference_count = 0  # reset counter properly
-    for p_mid in midpoint_pressures:
+    # Interference indicators — exact original logic
+    interference_count = 10  # starts at total number of intervals
+    for mid_pos, p_mid in zip(midpoint_positions, midpoint_pressures):
         if p_mid < 0.1:
-            interference_count += 1
+            ax.axvline(mid_pos, color='cyan', linestyle='--', linewidth=3, alpha=0.9)
+            interference_count -= 1
+        else:
+            ax.axvline(mid_pos, color='k', linestyle=':', linewidth=1.5, alpha=0.75)
 
-    # Flow regime logic
+    # Flow regime based on remaining count
     if interference_count == num_intervals:
-        flow_regime = "Boundary Dominated Flow"
+        flow_regime = "Boundary Dominated Flow"  # should never happen with this logic
     elif interference_count == 0:
+        flow_regime = "Infinite Acting"  # wait — this is backwards from intent!
+    else:
+        flow_regime = "Transitional Flow"
+
+    # Actually, looking at original intent: when interference_count == 0 → all reached → Boundary Dominated
+    # When interference_count == 10 → none reached → Infinite Acting
+    if interference_count == 0:
+        flow_regime = "Boundary Dominated Flow"
+    elif interference_count == 10:
         flow_regime = "Infinite Acting"
     else:
         flow_regime = "Transitional Flow"
 
-    # Plot styling with updated title
+    # Styling
     ax.set_ylabel('Fracture Half Length, xf (arbitrary units)', fontsize=14)
     ax.set_xlabel('Lateral Length, Lw (arbitrary units)', fontsize=14)
     ax.set_title(
         'Multi-Stage Fractured Horizontal Well — Top View\n'
         f'Time Producing = {t_D_global:.5f} (arbitrary units)  │  '
-        f'Reservoir Boundaries Reached = {interference_count}/{num_intervals}  │  '
+        f'Reservoir Boundaries Reached = {10 - interference_count}/{num_intervals}  │  '  # show reached, not remaining
         f'Flow Regime = {flow_regime}',
         fontsize=16, pad=20
     )
     
     ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.tick_params(axis='both', which='minor', labelsize=10)
+
     ax.set_yticks([-250, -125, 0, 125, 250])
     ax.set_yticklabels(['250', '125', '0 (Well)', '125', '250'])
     ax.grid(True, axis='y', alpha=0.3, color='white', linestyle='--')
@@ -104,20 +120,31 @@ def generate_plot(t_D_global):
     ax.set_xlim(0, total_length)
     ax.set_ylim(-half_length, half_length)
 
+    # Legend
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color='red', lw=4, label='Hydraulic Fracture'),
+        Line2D([0], [0], color='whitesmoke', lw=6, label='Horizontal Wellbore'),
+        Line2D([0], [0], color='cyan', linestyle='--', lw=3, label='Significant Interference (P << Pi)'),
+        Line2D([0], [0], color='k', linestyle=':', lw=1.5, alpha=0.75, label='No Significant Interference'),
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', fontsize=11, framealpha=0.75)
+
     plt.tight_layout()
     return fig
 
-# Streamlit UI
-st.title("Multi-Stage Fractured Horizontal Well Simulation")
+# Streamlit interface
+st.title("Multi-Stage Fractured Horizontal Well — Pressure Depletion Visualization")
 
 t_D_global = st.slider(
-    "Time Producing (t_D)",
+    "Time Producing (dimensionless)",
     min_value=0.0001,
     max_value=0.25,
     value=0.001,
     step=0.001,
-    format="%.4f"
+    format="%.4f",
+    help="Higher values = longer production time → more pressure depletion"
 )
 
-plot_fig = generate_plot(t_D_global)
-st.pyplot(plot_fig)
+fig = generate_plot(t_D_global)
+st.pyplot(fig)
