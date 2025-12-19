@@ -26,18 +26,54 @@ def pressure_in_interval(x_D_local, t_D_local):
     return 1 - sum_term
 
 def generate_plot(t_D_global):
-    # INCREASED FIGURE SIZE: much wider and taller for better visibility
-    fig, ax = plt.subplots(figsize=(20, 10))  # Was (16, 6) → now bigger and taller
+    fig, ax = plt.subplots(figsize=(20, 10))  # Bigger plot
 
-    # ... [rest of your plotting code unchanged until the end] ...
+    x_global = np.linspace(0, total_length, num_intervals * num_points_per_interval)
+    p_D_global = np.zeros_like(x_global)
 
-    # (Keep all your existing code inside the function: x_global, pcolormesh, colorbar, lines, legend, etc.)
+    midpoint_positions = []
+    midpoint_pressures = []
 
-    ax.set_ylabel('Fracture Half Length, xf (arbitrary units)', fontsize=14)
-    ax.set_xlabel('Lateral Length, Lw (arbitrary units)', fontsize=14)
-    
-    # Fixed flow regime logic (corrected below)
-    interference_count = 10
+    # Fill the midpoint lists first
+    for i in range(num_intervals):
+        L_i = intervals[i]
+        left = fracture_positions[i]
+        right = fracture_positions[i+1]
+        mid_x = (left + right) / 2.0
+
+        mask = (x_global >= left) & (x_global < right)
+        x_local = x_global[mask]
+        x_D_local = (x_local - left) / L_i
+
+        t_D_local = t_D_global * (L_avg / L_i)**2
+        p_interval = pressure_in_interval(x_D_local, t_D_local)
+        p_D_global[mask] = p_interval
+
+        p_mid = pressure_in_interval(np.array([0.5]), t_D_local)[0]
+        midpoint_positions.append(mid_x)
+        midpoint_pressures.append(p_mid)
+
+    # Now build the 2D pressure field
+    y_plot = np.linspace(-half_length, half_length, 160)
+    X_plot, Y_plot = np.meshgrid(x_global, y_plot)
+    P_2d = np.tile(p_D_global, (len(y_plot), 1))
+
+    im = ax.pcolormesh(X_plot, Y_plot, P_2d, cmap='viridis', vmin=0, vmax=1.0, shading='auto')
+
+    cbar = plt.colorbar(im, ax=ax, pad=0.02)
+    cbar.set_label('Pressure', fontsize=14)
+    cbar.set_ticks([0, 0.5, 1.0])
+    cbar.set_ticklabels(['P = Pi', 'P < Pi', 'P << Pi'])
+    cbar.ax.tick_params(labelsize=12)
+    cbar.ax.invert_yaxis()
+
+    # Fractures and wellbore
+    for pos in fracture_positions:
+        ax.axvline(pos, ymin=0, ymax=1, color='red', linewidth=3.5)
+    ax.axhline(0, color='whitesmoke', linewidth=6)
+
+    # NOW draw interference indicators — after midpoints exist!
+    interference_count = 10  # start at total intervals
     for mid_pos, p_mid in zip(midpoint_positions, midpoint_pressures):
         if p_mid < 0.1:
             ax.axvline(mid_pos, color='cyan', linestyle='--', linewidth=3, alpha=0.9)
@@ -45,6 +81,7 @@ def generate_plot(t_D_global):
         else:
             ax.axvline(mid_pos, color='k', linestyle=':', linewidth=1.5, alpha=0.75)
 
+    # Correct flow regime logic
     if interference_count == 10:
         flow_regime = "Infinite Acting"
     elif interference_count == 0:
@@ -52,12 +89,15 @@ def generate_plot(t_D_global):
     else:
         flow_regime = "Transitional Flow"
 
+    # Title and styling
+    ax.set_ylabel('Fracture Half Length, xf (arbitrary units)', fontsize=14)
+    ax.set_xlabel('Lateral Length, Lw (arbitrary units)', fontsize=14)
     ax.set_title(
         'Multi-Stage Fractured Horizontal Well — Top View\n'
         f'Time Producing = {t_D_global:.5f} (arbitrary units) │ '
         f'Reservoir Boundaries Reached = {10 - interference_count}/{num_intervals} │ '
         f'Flow Regime = {flow_regime}',
-        fontsize=18, pad=20  # Slightly larger title font
+        fontsize=18, pad=20
     )
 
     ax.tick_params(axis='both', which='major', labelsize=12)
@@ -81,12 +121,11 @@ def generate_plot(t_D_global):
     plt.tight_layout()
     return fig
 
-# Streamlit interface — IMPROVED LAYOUT
-st.set_page_config(page_title="Fracture Simulation", layout="wide")  # Makes app full-width
+# Streamlit UI
+st.set_page_config(page_title="Flow Regimes Simulation", layout="wide")
 
 st.title("Multi-Stage Fractured Horizontal Well — Pressure Depletion Visualization")
 
-# Use columns to center the slider nicely
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     t_D_global = st.slider(
@@ -99,6 +138,5 @@ with col2:
         help="Higher values = longer production time → more pressure depletion"
     )
 
-# Display the large plot — use full width
 fig = generate_plot(t_D_global)
-st.pyplot(fig, use_container_width=True)  # This makes it stretch to fill the page width
+st.pyplot(fig, use_container_width=True)
