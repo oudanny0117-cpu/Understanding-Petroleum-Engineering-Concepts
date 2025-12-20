@@ -84,9 +84,9 @@ def generate_plot(t_D_global):
 
     # Flow regime based on remaining count
     if interference_count == num_intervals:
-        flow_regime = "Boundary Dominated Flow"  # should never happen with this logic
+        flow_regime = "Infinite Acting"  # should never happen with this logic
     elif interference_count == 0:
-        flow_regime = "Infinite Acting"  # wait — this is backwards from intent!
+        flow_regime = "Boundary Dominated Flow"  # wait — this is backwards from intent!
     else:
         flow_regime = "Transitional Flow"
 
