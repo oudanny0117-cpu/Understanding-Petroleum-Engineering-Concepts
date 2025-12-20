@@ -93,9 +93,9 @@ def generate_plot(t_D_global):
     # Actually, looking at original intent: when interference_count == 0 → all reached → Boundary Dominated
     # When interference_count == 10 → none reached → Infinite Acting
     if interference_count == 0:
-        flow_regime = "Boundary Dominated Flow"
-    elif interference_count == 10:
         flow_regime = "Infinite Acting"
+    elif interference_count == 10:
+        flow_regime = "Boundary Dominated Flow"
     else:
         flow_regime = "Transitional Flow"
 
